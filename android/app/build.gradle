@@ -1,0 +1,81 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services" // Firebase plugin
+}
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace = "com.md2048.app"
+    compileSdk = 34 // Make sure the value matches your project setup
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        applicationId = "com.md2048.app"
+        minSdk = 19 // Minimum supported SDK
+        targetSdk = 34 // Make sure this is the latest supported by your app
+        versionCode = 1
+        versionName = "1.0"
+        multiDexEnabled true
+        ndk {
+            debugSymbolLevel 'FULL' // Enable full debug symbol generation
+        }
+    }
+
+    android {
+        // ...
+
+        signingConfigs {
+            release {
+                keyAlias = keystoreProperties['keyAlias']
+                keyPassword = keystoreProperties['keyPassword']
+                storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                storePassword = keystoreProperties['storePassword']
+            }
+        }
+        buildTypes {
+            release {
+                // TODO: Add your own signing config for the release build.
+                // Signing with the debug keys for now,
+                // so `flutter run --release` works.
+
+                // Enable ProGuard for obfuscation (optional but recommended)
+                minifyEnabled false
+                shrinkResources false
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                signingConfig = signingConfigs.debug
+                signingConfig = signingConfigs.release
+            }
+        }
+
+        buildFeatures {
+            viewBinding true // Optional: Enable View Binding if required
+        }
+    }
+
+    dependencies {
+        implementation 'com.google.firebase:firebase-database:20.0.6'
+        implementation 'com.google.firebase:firebase-core:21.1.0'
+        implementation platform('com.google.firebase:firebase-bom:32.1.1')
+        // BOM for Firebase version alignment
+        implementation 'com.android.support:multidex:1.0.3'
+
+        // Optional: Include Firestore or Auth if used in the project
+        // implementation 'com.google.firebase:firebase-auth-ktx'
+        // implementation 'com.google.firebase:firebase-firestore-ktx'
+    }
+}

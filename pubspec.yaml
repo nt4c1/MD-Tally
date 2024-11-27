@@ -1,0 +1,31 @@
+name: app
+description: A 2048 game built with Flutter.
+version: 1.0.1
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  firebase_core: ^2.17.0
+  firebase_database: ^10.0.6
+  cloud_firestore: ^4.17.5
+  provider: ^6.1.2
+  url_launcher: ^6.3.1
+  flutter_launcher_icons: ^0.14.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+##flutter_launcher_icons:
+  ##android: "launcher_icon"
+  ##ios: "AppIcon"
+  ##image_path: "icons/2048.png"
+  ##remove_alpha_ios: true
+  #adaptive_icon_background: "#ffffff" # You can use a color or image for the background
+  #adaptive_icon_foreground: "icons/logodark.png" # For adaptive icons on Android
