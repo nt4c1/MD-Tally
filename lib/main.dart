@@ -15,10 +15,10 @@ class Game2048App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '2048 Game',
+      title: 'MD Tally',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[200],
+        primarySwatch: Colors.brown,
+        scaffoldBackgroundColor: Colors.brown[300],
       ),
       home: Game2048Screen(),
     );
@@ -36,6 +36,7 @@ class _Game2048ScreenState extends State<Game2048Screen> {
   bool isRestricted = false;
   bool gameOver = false;
   bool nameInputVisible = false;
+  int woodBurned = 0;
   TextEditingController nameController = TextEditingController();
   final List<String> restrictedCountries = ['my', 'sg', 'au', 'id'];
 
@@ -60,12 +61,12 @@ class _Game2048ScreenState extends State<Game2048Screen> {
     }
   }
 
-  Future<void> savePlayerDataToFirebase(String name, int score, String country) async {
+  Future<void> savePlayerDataToFirebase(String name, int woodBurned, String country) async {
     try {
       final playersRef = FirebaseFirestore.instance.collection('players');
       await playersRef.add({
         'name': name,
-        'score': score,
+        'woodBurned': woodBurned,
         'country': country,
         'timestamp': FieldValue.serverTimestamp(),
       });
@@ -92,28 +93,33 @@ class _Game2048ScreenState extends State<Game2048Screen> {
             game.moveDown();
             break;
         }
+        woodBurned += calculateWoodBurned();
       }
       gameOver = game.isGameOver();
       if (gameOver) {
-        nameInputVisible = true;  // Show name input after game over
+        nameInputVisible = true;
       }
     });
+  }
+
+  int calculateWoodBurned() {
+    return game.grid.expand((row) => row).reduce((sum, value) => sum + value);
   }
 
   void resetGame() {
     setState(() {
       game.resetGame();
       gameOver = false;
-      nameInputVisible = false; // Hide name input when resetting
+      nameInputVisible = false;
+      woodBurned = 0;
       nameController.clear();
     });
   }
 
   void savePlayerData(String name) {
-    // Save data to Firebase after entering the name
-    savePlayerDataToFirebase(name, game.score, country);
+    savePlayerDataToFirebase(name, woodBurned, country);
     setState(() {
-      nameInputVisible = false; // Hide name input after saving
+      nameInputVisible = false;
     });
   }
 
@@ -121,7 +127,8 @@ class _Game2048ScreenState extends State<Game2048Screen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('2048 - Country: $country'),
+        title: Text('MD Tally'),
+        backgroundColor: Colors.grey,
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -129,98 +136,104 @@ class _Game2048ScreenState extends State<Game2048Screen> {
           )
         ],
       ),
-      body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          if (details.primaryVelocity! > 0) {
-            onSwipe(Direction.right);
-          } else if (details.primaryVelocity! < 0) {
-            onSwipe(Direction.left);
-          }
-        },
-        onVerticalDragEnd: (details) {
-          if (details.primaryVelocity! > 0) {
-            onSwipe(Direction.down);
-          } else if (details.primaryVelocity! < 0) {
-            onSwipe(Direction.up);
-          }
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (gameOver && !nameInputVisible) ...[
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/back.jpg'),
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+          ),
+        ),
+        child: GestureDetector(
+          onHorizontalDragEnd: (details) {
+            if (details.primaryVelocity! > 0) {
+              onSwipe(Direction.right);
+            } else if (details.primaryVelocity! < 0) {
+              onSwipe(Direction.left);
+            }
+          },
+          onVerticalDragEnd: (details) {
+            if (details.primaryVelocity! > 0) {
+              onSwipe(Direction.down);
+            } else if (details.primaryVelocity! < 0) {
+              onSwipe(Direction.up);
+            }
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (gameOver && !nameInputVisible) ...[
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Game Over',
+                        style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Wood Burned: $woodBurned kg',
+                        style: TextStyle(fontSize: 24, color: Colors.grey),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: resetGame,
+                        child: Text('Play Again'),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (nameInputVisible) ...[
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Game Over',
-                      style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                      'Enter your name',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     SizedBox(height: 20),
-                    Text(
-                      'Final Score: ${game.score}',
-                      style: TextStyle(fontSize: 24, color: Colors.black87),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: resetGame,
-                      child: Text('Play Again'),
-                    ),
-                  ],
-                ),
-              ),
-            ] else if (nameInputVisible) ...[
-              // Name Input Section
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Enter your name',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        border: OutlineInputBorder(),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.blue),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Name',
+                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(color: Colors.white),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      String name = nameController.text;
-                      if (name.isNotEmpty) {
-                        savePlayerData(name); // Save the data to Firebase
-                      }
-                    },
-                    child: Text('Submit'),
-                  ),
-                ],
-              ),
-            ] else ...[
-              Text(
-                'Score: ${game.score}',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 20),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: game.grid.map((row) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: row.map((value) => buildTile(value)).toList(),
-                  );
-                }).toList(),
-              ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        String name = nameController.text;
+                        if (name.isNotEmpty) {
+                          savePlayerData(name);
+                        }
+                      },
+                      child: Text('Submit'),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                Text(
+                  'Wood Burned: $woodBurned kg',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                SizedBox(height: 20),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: game.grid.map((row) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: row.map((value) => buildTile(value)).toList(),
+                    );
+                  }).toList(),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -233,29 +246,38 @@ class _Game2048ScreenState extends State<Game2048Screen> {
       margin: EdgeInsets.all(4),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: getTileColor(value),
-        borderRadius: BorderRadius.circular(8),
+        image: value > 0
+            ? DecorationImage(
+          image: AssetImage('assets/images/tile.jpg'),
+          fit: BoxFit.cover,
+        )
+            : null,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        value == 0 ? '' : '$value',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: value > 4 ? Colors.white : Colors.black),
+        value == 0 ? '' : '$value kg', // Added "kg" to tile numbers
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
   Color getTileColor(int value) {
+    // Optional, if you want to add colors to the tile based on value
     switch (value) {
       case 2: return Colors.orange[100]!;
       case 4: return Colors.orange[200]!;
       case 8: return Colors.orange[300]!;
       case 16: return Colors.orange[400]!;
-      case 32: return Colors.orange[500]!;
-      case 64: return Colors.orange[600]!;
-      case 128: return Colors.green[200]!;
-      case 256: return Colors.green[300]!;
-      case 512: return Colors.green[400]!;
-      case 1024: return Colors.green[500]!;
-      case 2048: return Colors.green[600]!;
+      case 32: return Colors.red[300]!;
+      case 64: return Colors.red[400]!;
+      case 128: return Colors.red[500]!;
+      case 256: return Colors.yellow[300]!;
+      case 512: return Colors.yellow[400]!;
+      case 1024: return Colors.yellow[500]!;
+      case 2048: return Colors.brown[400]!;
       default: return Colors.grey[300]!;
     }
   }

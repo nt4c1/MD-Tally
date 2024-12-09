@@ -24,7 +24,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-##flutter_launcher_icons:
+  assets:
+    - assets/images/back.jpg
+    - assets/images/tile.jpg
+
+
+  ##flutter_launcher_icons:
   ##android: "launcher_icon"
   ##ios: "AppIcon"
   ##image_path: "icons/2048.png"
