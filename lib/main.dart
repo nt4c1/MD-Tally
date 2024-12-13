@@ -1,14 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:http/http.dart' as http;
-import 'game_logic.dart'; // Import game logic
+import 'game_logic.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
+void main() {
   runApp(MyApp());
 }
 
@@ -16,13 +10,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: Colors.blue,
-        textTheme: TextTheme(
-          titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white),
-        ),
+        primarySwatch: Colors.blue,
       ),
       home: GameScreen(),
     );
@@ -38,73 +28,48 @@ class _GameScreenState extends State<GameScreen> {
   final GameLogic _gameLogic = GameLogic();
   late Timer _balloonTimer;
   late Timer _movementTimer;
-  String? _playerName;
-  String? _country;
 
   @override
   void initState() {
     super.initState();
-    _fetchCountry(); // Fetch the player's country
     _startGame();
   }
 
-  void _fetchCountry() async {
-    try {
-      final response = await http.get(Uri.parse('https://api.country.is'));
-      if (response.statusCode == 200) {
-        setState(() {
-          _country = json.decode(response.body)['country'];
-        });
-      } else {
-        print("Failed to fetch country");
-      }
-    } catch (e) {
-      print("Error fetching country: $e");
-    }
-  }
-
   void _startGame() {
-    _balloonTimer = Timer.periodic(Duration(milliseconds: _getSpawnRate()), (timer) {
+    _balloonTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (!_gameLogic.gameOver) {
         setState(() {
-          _gameLogic.spawnBalloon(MediaQuery.of(context).size.width, MediaQuery.of(context).size.height);
+          _gameLogic.spawnBalloon(
+            MediaQuery.of(context).size.width,
+            MediaQuery.of(context).size.height,
+          );
         });
       }
     });
 
-    _movementTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+    _movementTimer = Timer.periodic(Duration(milliseconds: 30), (timer) {
       setState(() {
-        double screenHeight = MediaQuery.of(context).size.height;
-        _gameLogic.updateBalloonPositions(screenHeight);
+        _gameLogic.updateBalloonPositions(MediaQuery.of(context).size.height);
         _gameLogic.mergeBalloons();
       });
     });
   }
 
-  int _getSpawnRate() {
-    int baseSpawnRate = 500; // Initial rate (faster spawn)
-    int maxSpawnDelay = 1500; // Maximum delay (slower spawn)
-
-    // Calculate spawn rate based on score, but reduce its effect
-    int spawnRate = baseSpawnRate + (_gameLogic.score / 8).toInt(); // Slower spawn over time
-
-    // Clamp to ensure the spawn rate doesn't get too slow or too fast
-    return spawnRate.clamp(baseSpawnRate, maxSpawnDelay);
+  @override
+  void dispose() {
+    _balloonTimer.cancel();
+    _movementTimer.cancel();
+    super.dispose();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Spirit Tube', style: Theme.of(context).textTheme.titleLarge),
-        backgroundColor: Colors.deepPurple,
-      ),
       body: Stack(
         children: [
+          // Background Gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -114,152 +79,89 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
           ),
+          // Score Display
           Positioned(
             top: 40,
-            left: 20,
-            child: Text(
-              'Score: ${_gameLogic.score}',
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
+            left: MediaQuery.of(context).size.width / 2 - 60,
+            child: Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Score: ${_gameLogic.score}',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
             ),
           ),
+          // Balloons
           for (var balloon in _gameLogic.balloons)
             Positioned(
-              left: balloon.x - 40,
-              bottom: balloon.y - 40,
-              child: Draggable(
-                key: Key(balloon.value.toString()),
-                feedback: _buildBalloon(balloon),
-                childWhenDragging: Container(),
-                onDragEnd: (details) {
+              left: balloon.x,
+              bottom: screenHeight - balloon.y - 80,
+              child: GestureDetector(
+                onPanUpdate: (details) {
                   setState(() {
-                    balloon.x = details.offset.dx;
-                    balloon.y = screenHeight - details.offset.dy - 80.0;
-                    _gameLogic.handleDrag(balloon, balloon.x, balloon.y, screenHeight); // Call handleDrag
+                    balloon.x = (balloon.x + details.delta.dx)
+                        .clamp(0.0, MediaQuery.of(context).size.width - _gameLogic.balloonSize);
+                    balloon.y = (balloon.y + details.delta.dy)
+                        .clamp(_gameLogic.reservedScoreHeight + _gameLogic.balloonSize,
+                        MediaQuery.of(context).size.height - _gameLogic.balloonSize);
+                  });
+                },
+                onPanEnd: (details) {
+                  setState(() {
                     _gameLogic.mergeBalloons();
                   });
                 },
-                child: _buildBalloon(balloon),
+                child: Container(
+                  width: _gameLogic.balloonSize,
+                  height: _gameLogic.balloonSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [balloon.color.withOpacity(0.6), balloon.color],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: balloon.color.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: Offset(2, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      balloon.value.toString(),
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
               ),
             ),
-          if (_gameLogic.gameOver) _gameOverOverlay(context),
+          // Game Over
+          if (_gameLogic.gameOver)
+            Center(
+              child: AlertDialog(
+                title: Text('Game Over'),
+                content: Text('Your score: ${_gameLogic.score}'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _gameLogic.resetGame();
+                      });
+                    },
+                    child: Text('Restart'),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
-  }
-
-  Widget _buildBalloon(Balloon balloon) {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [balloon.color.withOpacity(0.7), balloon.color],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 10,
-            spreadRadius: 5,
-            offset: Offset(5, 5),
-          ),
-        ],
-      ),
-      child: CustomPaint(
-        painter: BalloonPainter(balloon: balloon),
-      ),
-    );
-  }
-
-  Widget _gameOverOverlay(BuildContext context) {
-    return Container(
-      color: Colors.black.withOpacity(0.7),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Game Over!',
-              style: TextStyle(fontSize: 40, color: Colors.white),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Score: ${_gameLogic.score}',
-              style: TextStyle(fontSize: 30, color: Colors.white),
-            ),
-            SizedBox(height: 20),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Enter your name',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _playerName = value;
-                });
-              },
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                if (_playerName != null && _playerName!.isNotEmpty) {
-                  _saveScore();
-                  setState(() {
-                    _gameLogic.score = 0;
-                    _gameLogic.balloons.clear();
-                    _gameLogic.gameOver = false;
-                    _startGame();
-                  });
-                }
-              },
-              child: Text('Restart'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _saveScore() async {
-    // Save the score to Firestore
-    FirebaseFirestore.instance.collection('scores').add({
-      'name': _playerName,
-      'score': _gameLogic.score,
-      'country': _country,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-  }
-}
-
-class BalloonPainter extends CustomPainter {
-  final Balloon balloon;
-
-  BalloonPainter({required this.balloon});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()..color = balloon.color;
-    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 40.0, paint);
-
-    // Draw value text
-    TextPainter textPainter = TextPainter(
-      text: TextSpan(
-        text: '${balloon.value}',
-        style: TextStyle(fontSize: 30, color: Colors.white),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(canvas, Offset(size.width / 2 - textPainter.width / 2, size.height / 2 - textPainter.height / 2));
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
   }
 }
