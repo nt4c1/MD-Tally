@@ -142,6 +142,32 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
             ),
+          // "Limit 11" Text
+          Positioned(
+            top: 120, // Positioned between the score and the line (Score top = 40, so 120 is a good position)
+            left: MediaQuery.of(context).size.width / 2 - 60,
+            child: Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                "Limit : 11",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+            ),
+          ),
+          // Stopping point line (positioned below the "Limit 11" text)
+          Positioned(
+            top: 193, // Positioned just below "Limit 11"
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 5, // Thickness of the line
+              color: Colors.red.withOpacity(0.8),
+            ),
+          ),
           // Game Over
           if (_gameLogic.gameOver)
             Center(
