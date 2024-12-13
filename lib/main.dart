@@ -1,286 +1,265 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'game_logic.dart';
-import 'firebase_options.dart';
-import 'country_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:http/http.dart' as http;
+import 'game_logic.dart'; // Import game logic
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(Game2048App());
+  await Firebase.initializeApp(); // Initialize Firebase
+  runApp(MyApp());
 }
 
-class Game2048App extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MD Tally',
       theme: ThemeData(
-        primarySwatch: Colors.brown,
-        scaffoldBackgroundColor: Colors.brown[300],
+        brightness: Brightness.light,
+        primaryColor: Colors.blue,
+        textTheme: TextTheme(
+          titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white),
+        ),
       ),
-      home: Game2048Screen(),
+      home: GameScreen(),
     );
   }
 }
 
-class Game2048Screen extends StatefulWidget {
+class GameScreen extends StatefulWidget {
   @override
-  _Game2048ScreenState createState() => _Game2048ScreenState();
+  _GameScreenState createState() => _GameScreenState();
 }
 
-class _Game2048ScreenState extends State<Game2048Screen> {
-  late Game2048 game;
-  String country = 'Fetching...';
-  bool isRestricted = false;
-  bool gameOver = false;
-  bool nameInputVisible = false;
-  int woodBurned = 0;
-  TextEditingController nameController = TextEditingController();
-  final List<String> restrictedCountries = ['my', 'sg', 'au', 'id'];
+class _GameScreenState extends State<GameScreen> {
+  final GameLogic _gameLogic = GameLogic();
+  late Timer _balloonTimer;
+  late Timer _movementTimer;
+  String? _playerName;
+  String? _country;
 
   @override
   void initState() {
     super.initState();
-    game = Game2048(gridSize: 4);
-    fetchCountryAndHandleRestriction();
+    _fetchCountry(); // Fetch the player's country
+    _startGame();
   }
 
-  Future<void> fetchCountryAndHandleRestriction() async {
+  void _fetchCountry() async {
     try {
-      country = await CountryService.fetchCountry();
-      setState(() {
-        isRestricted = restrictedCountries.contains(country.toLowerCase());
-      });
+      final response = await http.get(Uri.parse('https://api.country.is'));
+      if (response.statusCode == 200) {
+        setState(() {
+          _country = json.decode(response.body)['country'];
+        });
+      } else {
+        print("Failed to fetch country");
+      }
     } catch (e) {
-      setState(() {
-        country = 'Unknown';
-        isRestricted = false;
-      });
+      print("Error fetching country: $e");
     }
   }
 
-  Future<void> savePlayerDataToFirebase(String name, int woodBurned, String country) async {
-    try {
-      final playersRef = FirebaseFirestore.instance.collection('players');
-      await playersRef.add({
-        'name': name,
-        'woodBurned': woodBurned,
-        'country': country,
-        'timestamp': FieldValue.serverTimestamp(),
+  void _startGame() {
+    _balloonTimer = Timer.periodic(Duration(milliseconds: _getSpawnRate()), (timer) {
+      if (!_gameLogic.gameOver) {
+        setState(() {
+          _gameLogic.spawnBalloon(MediaQuery.of(context).size.width, MediaQuery.of(context).size.height);
+        });
+      }
+    });
+
+    _movementTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+      setState(() {
+        double screenHeight = MediaQuery.of(context).size.height;
+        _gameLogic.updateBalloonPositions(screenHeight);
+        _gameLogic.mergeBalloons();
       });
-      print('Player data saved to Firestore');
-    } catch (e) {
-      print('Error saving player data to Firestore: $e');
-    }
-  }
-
-  void onSwipe(Direction direction) {
-    setState(() {
-      if (!game.isGameOver()) {
-        switch (direction) {
-          case Direction.left:
-            game.moveLeft();
-            break;
-          case Direction.right:
-            game.moveRight();
-            break;
-          case Direction.up:
-            game.moveUp();
-            break;
-          case Direction.down:
-            game.moveDown();
-            break;
-        }
-        woodBurned += calculateWoodBurned();
-      }
-      gameOver = game.isGameOver();
-      if (gameOver) {
-        nameInputVisible = true;
-      }
     });
   }
 
-  int calculateWoodBurned() {
-    return game.grid.expand((row) => row).reduce((sum, value) => sum + value);
+  int _getSpawnRate() {
+    int baseSpawnRate = 500; // Initial rate (faster spawn)
+    int maxSpawnDelay = 1500; // Maximum delay (slower spawn)
+
+    // Calculate spawn rate based on score, but reduce its effect
+    int spawnRate = baseSpawnRate + (_gameLogic.score / 8).toInt(); // Slower spawn over time
+
+    // Clamp to ensure the spawn rate doesn't get too slow or too fast
+    return spawnRate.clamp(baseSpawnRate, maxSpawnDelay);
   }
 
-  void resetGame() {
-    setState(() {
-      game.resetGame();
-      gameOver = false;
-      nameInputVisible = false;
-      woodBurned = 0;
-      nameController.clear();
-    });
-  }
 
-  void savePlayerData(String name) {
-    savePlayerDataToFirebase(name, woodBurned, country);
-    setState(() {
-      nameInputVisible = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
+    double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('MD Tally'),
-        backgroundColor: Colors.grey,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: resetGame,
-          )
+        title: Text('Spirit Tube', style: Theme.of(context).textTheme.titleLarge),
+        backgroundColor: Colors.deepPurple,
+      ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.blueAccent, Colors.deepPurpleAccent],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            left: 20,
+            child: Text(
+              'Score: ${_gameLogic.score}',
+              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+          ),
+          for (var balloon in _gameLogic.balloons)
+            Positioned(
+              left: balloon.x - 40,
+              bottom: balloon.y - 40,
+              child: Draggable(
+                key: Key(balloon.value.toString()),
+                feedback: _buildBalloon(balloon),
+                childWhenDragging: Container(),
+                onDragEnd: (details) {
+                  setState(() {
+                    balloon.x = details.offset.dx;
+                    balloon.y = screenHeight - details.offset.dy - 80.0;
+                    _gameLogic.handleDrag(balloon, balloon.x, balloon.y, screenHeight); // Call handleDrag
+                    _gameLogic.mergeBalloons();
+                  });
+                },
+                child: _buildBalloon(balloon),
+              ),
+            ),
+          if (_gameLogic.gameOver) _gameOverOverlay(context),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/back.jpg'),
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-          ),
-        ),
-        child: GestureDetector(
-          onHorizontalDragEnd: (details) {
-            if (details.primaryVelocity! > 0) {
-              onSwipe(Direction.right);
-            } else if (details.primaryVelocity! < 0) {
-              onSwipe(Direction.left);
-            }
-          },
-          onVerticalDragEnd: (details) {
-            if (details.primaryVelocity! > 0) {
-              onSwipe(Direction.down);
-            } else if (details.primaryVelocity! < 0) {
-              onSwipe(Direction.up);
-            }
-          },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (gameOver && !nameInputVisible) ...[
-                Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Game Over',
-                        style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        'Wood Burned: $woodBurned kg',
-                        style: TextStyle(fontSize: 24, color: Colors.grey),
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: resetGame,
-                        child: Text('Play Again'),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (nameInputVisible) ...[
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Enter your name',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    SizedBox(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: TextField(
-                        controller: nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Name',
-                          border: OutlineInputBorder(),
-                          labelStyle: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        String name = nameController.text;
-                        if (name.isNotEmpty) {
-                          savePlayerData(name);
-                        }
-                      },
-                      child: Text('Submit'),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                Text(
-                  'Wood Burned: $woodBurned kg',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                SizedBox(height: 20),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: game.grid.map((row) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: row.map((value) => buildTile(value)).toList(),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 
-  Widget buildTile(int value) {
-    return Container(
+  Widget _buildBalloon(Balloon balloon) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
       width: 80,
       height: 80,
-      margin: EdgeInsets.all(4),
-      alignment: Alignment.center,
       decoration: BoxDecoration(
-        image: value > 0
-            ? DecorationImage(
-          image: AssetImage('assets/images/tile.jpg'),
-          fit: BoxFit.cover,
-        )
-            : null,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [balloon.color.withOpacity(0.7), balloon.color],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 10,
+            spreadRadius: 5,
+            offset: Offset(5, 5),
+          ),
+        ],
       ),
-      child: Text(
-        value == 0 ? '' : '$value kg', // Added "kg" to tile numbers
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
+      child: CustomPaint(
+        painter: BalloonPainter(balloon: balloon),
+      ),
+    );
+  }
+
+  Widget _gameOverOverlay(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.7),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Game Over!',
+              style: TextStyle(fontSize: 40, color: Colors.white),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Score: ${_gameLogic.score}',
+              style: TextStyle(fontSize: 30, color: Colors.white),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Enter your name',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _playerName = value;
+                });
+              },
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                if (_playerName != null && _playerName!.isNotEmpty) {
+                  _saveScore();
+                  setState(() {
+                    _gameLogic.score = 0;
+                    _gameLogic.balloons.clear();
+                    _gameLogic.gameOver = false;
+                    _startGame();
+                  });
+                }
+              },
+              child: Text('Restart'),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Color getTileColor(int value) {
-    // Optional, if you want to add colors to the tile based on value
-    switch (value) {
-      case 2: return Colors.orange[100]!;
-      case 4: return Colors.orange[200]!;
-      case 8: return Colors.orange[300]!;
-      case 16: return Colors.orange[400]!;
-      case 32: return Colors.red[300]!;
-      case 64: return Colors.red[400]!;
-      case 128: return Colors.red[500]!;
-      case 256: return Colors.yellow[300]!;
-      case 512: return Colors.yellow[400]!;
-      case 1024: return Colors.yellow[500]!;
-      case 2048: return Colors.brown[400]!;
-      default: return Colors.grey[300]!;
-    }
+  void _saveScore() async {
+    // Save the score to Firestore
+    FirebaseFirestore.instance.collection('scores').add({
+      'name': _playerName,
+      'score': _gameLogic.score,
+      'country': _country,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
   }
 }
 
-enum Direction { up, down, left, right }
+class BalloonPainter extends CustomPainter {
+  final Balloon balloon;
+
+  BalloonPainter({required this.balloon});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint()..color = balloon.color;
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 40.0, paint);
+
+    // Draw value text
+    TextPainter textPainter = TextPainter(
+      text: TextSpan(
+        text: '${balloon.value}',
+        style: TextStyle(fontSize: 30, color: Colors.white),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(size.width / 2 - textPainter.width / 2, size.height / 2 - textPainter.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return false;
+  }
+}

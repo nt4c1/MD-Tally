@@ -1,5 +1,5 @@
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:firebase_database/firebase_database.dart';
 
 class CountryService {
@@ -22,7 +22,7 @@ class CountryService {
   }
 
   /// Saves player data to Firebase
-  Future<void> saveToFirebase(String playerName, int score, String country) async {
+  static Future<void> saveToFirebase(String playerName, int score, String country) async {
     try {
       final dbRef = FirebaseDatabase.instance.ref('players').push();
       await dbRef.set({
