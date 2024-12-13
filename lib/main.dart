@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'game_logic.dart';
+import 'country_service.dart'; // Import the CountryService
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // Initialize Firebase
   runApp(MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   @override
@@ -28,14 +34,27 @@ class _GameScreenState extends State<GameScreen> {
   final GameLogic _gameLogic = GameLogic();
   late Timer _balloonTimer;
   late Timer _movementTimer;
+  String country = 'Unknown'; // Initialize country variable
+  TextEditingController _nameController = TextEditingController(); // Controller for name input
 
   @override
   void initState() {
     super.initState();
     _startGame();
+    _fetchCountry(); // Fetch country at the start of the game
   }
 
+  // Fetch the user's country using CountryService
+  void _fetchCountry() async {
+    String fetchedCountry = await CountryService.fetchCountry();
+    setState(() {
+      country = fetchedCountry;
+    });
+  }
+
+  // Start the game
   void _startGame() {
+    // Timer to spawn balloons
     _balloonTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (!_gameLogic.gameOver) {
         setState(() {
@@ -47,6 +66,7 @@ class _GameScreenState extends State<GameScreen> {
       }
     });
 
+    // Timer to update balloon positions and merge them
     _movementTimer = Timer.periodic(Duration(milliseconds: 30), (timer) {
       setState(() {
         _gameLogic.updateBalloonPositions(MediaQuery.of(context).size.height);
@@ -55,10 +75,37 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  // Save the score and user details to Firebase
+  void _saveToFirebase() async {
+    String playerName = _nameController.text.trim();
+    int score = _gameLogic.score;
+
+    // Check if the player entered a name
+    if (playerName.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance.collection('players').add({
+          'playerName': playerName,
+          'score': score,
+          'country': country,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Data saved successfully!'),
+        ));
+      } catch (e) {
+        print('Error saving to Firestore: $e');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error saving data!'),
+        ));
+      }
+    }
+  }
+
   @override
   void dispose() {
     _balloonTimer.cancel();
     _movementTimer.cancel();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -142,7 +189,7 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
             ),
-          // "Limit 11" Text
+          // Dynamic "Limit" Text
           Positioned(
             top: 120, // Positioned between the score and the line (Score top = 40, so 120 is a good position)
             left: MediaQuery.of(context).size.width / 2 - 60,
@@ -153,14 +200,14 @@ class _GameScreenState extends State<GameScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                "Limit : 11",
+                "Limit: ${_gameLogic.limit}", // Display the dynamic limit
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ),
           ),
-          // Stopping point line (positioned below the "Limit 11" text)
+          // Stopping point line (positioned below the "Limit" text)
           Positioned(
-            top: 193, // Positioned just below "Limit 11"
+            top: 193, // Positioned just below "Limit"
             left: 0,
             right: 0,
             child: Container(
@@ -173,8 +220,34 @@ class _GameScreenState extends State<GameScreen> {
             Center(
               child: AlertDialog(
                 title: Text('Game Over'),
-                content: Text('Your score: ${_gameLogic.score}'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Your score: ${_gameLogic.score}'),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        hintText: 'Enter your name',
+                        border: OutlineInputBorder(),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
                 actions: [
+                  TextButton(
+                    onPressed: () {
+                      // Save the score, name, and country to Firebase
+                      _saveToFirebase();
+                      setState(() {
+                        _gameLogic.resetGame();
+                        _nameController.clear(); // Clear name input after submission
+                      });
+                    },
+                    child: Text('Submit'),
+                  ),
                   TextButton(
                     onPressed: () {
                       setState(() {

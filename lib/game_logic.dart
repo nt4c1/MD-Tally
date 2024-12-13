@@ -24,6 +24,8 @@ class GameLogic {
 
   final double balloonSize = 80.0; // Diameter of the balloons
   final double reservedScoreHeight = 120.0; // Height reserved for the score display
+  int limit = 11; // Initial limit value
+  int previousTouchCount = 0; // Track previous number of balloons touching the top
 
   /// Spawns a balloon at the bottom of the screen
   void spawnBalloon(double screenWidth, double screenHeight) {
@@ -50,18 +52,30 @@ class GameLogic {
 
   /// Updates the position of balloons, making them move upwards
   void updateBalloonPositions(double screenHeight) {
-    int stoppedBalloons = 0;
+    int touchedTopCount = 0;
 
     for (var balloon in balloons) {
       if (balloon.y > reservedScoreHeight + balloonSize) {
         balloon.y -= balloon.speed; // Move upwards
-      } else {
-        stoppedBalloons++; // Count balloons stopped at the stopping point
+      } else if (balloon.y <= reservedScoreHeight + balloonSize) {
+        touchedTopCount++; // Count how many balloons have reached the top
       }
     }
 
-    // Trigger game-over if more than 10 balloons are at the stopping point
-    if (stoppedBalloons > 10) {
+    // If the number of balloons touching the top changes, update the limit
+    if (touchedTopCount != previousTouchCount) {
+      int diff = touchedTopCount - previousTouchCount;
+
+      // Adjust the limit based on the number of balloons touching the top
+      limit -= diff;
+      limit = limit.clamp(0, 11); // Ensure the limit stays within 0 to 11
+
+      // Update the previousTouchCount to the new value
+      previousTouchCount = touchedTopCount;
+    }
+
+    // Trigger game-over if limit reaches 0
+    if (limit == 0) {
       gameOver = true;
     }
   }
@@ -87,5 +101,7 @@ class GameLogic {
     balloons.clear();
     score = 0;
     gameOver = false;
+    limit = 11; // Reset limit to 11 when restarting
+    previousTouchCount = 0; // Reset the count of balloons touching the top
   }
 }
