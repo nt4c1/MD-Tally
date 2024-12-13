@@ -29,7 +29,7 @@ class GameLogic {
   void spawnBalloon(double screenWidth, double screenHeight) {
     final random = Random();
 
-    if (_canSpawnBalloon(screenWidth, screenHeight)) {
+    if (!gameOver) {
       final balloonX = random.nextDouble() * (screenWidth - balloonSize); // Random horizontal position
       final balloonY = screenHeight - balloonSize; // Spawn near the bottom
 
@@ -45,27 +45,24 @@ class GameLogic {
         ),
         value: random.nextInt(10) + 1,
       ));
-    } else {
-      gameOver = true; // No space left for more balloons
     }
-  }
-
-  /// Checks if there is space for a new balloon
-  bool _canSpawnBalloon(double screenWidth, double screenHeight) {
-    for (var balloon in balloons) {
-      if ((balloon.y - balloonSize).abs() < balloonSize) {
-        return false;
-      }
-    }
-    return true;
   }
 
   /// Updates the position of balloons, making them move upwards
   void updateBalloonPositions(double screenHeight) {
+    int stoppedBalloons = 0;
+
     for (var balloon in balloons) {
       if (balloon.y > reservedScoreHeight + balloonSize) {
-        balloon.y -= balloon.speed;
+        balloon.y -= balloon.speed; // Move upwards
+      } else {
+        stoppedBalloons++; // Count balloons stopped at the stopping point
       }
+    }
+
+    // Trigger game-over if more than 10 balloons are at the stopping point
+    if (stoppedBalloons > 10) {
+      gameOver = true;
     }
   }
 
