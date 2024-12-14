@@ -3,13 +3,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'game_logic.dart';
 import 'country_service.dart'; // Import the CountryService
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'home_page.dart'; // Import Firestore
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
-  runApp(MyApp());
+  await Firebase.initializeApp();
+  runApp(MaterialApp(home: HomePage()));
 }
+
 
 
 class MyApp extends StatelessWidget {
@@ -256,7 +259,17 @@ class _GameScreenState extends State<GameScreen> {
                     },
                     child: Text('Restart'),
                   ),
-                ],
+                  TextButton(
+                  onPressed: () {
+    // Navigate to HomePage
+    Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => HomePage()),
+    (route) => false, // Clears all routes
+    );
+    },
+    child: Text('Go to Homepage'),
+                  )],
               ),
             ),
         ],
