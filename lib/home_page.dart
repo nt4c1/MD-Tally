@@ -1,8 +1,9 @@
+import 'dart:io'; // Required for Platform check
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'leaderboard_page.dart';
-import 'main.dart'; // Import the main.dart to launch the game
-import 'package:cloud_firestore/cloud_firestore.dart'; // For leaderboard data
+import 'main.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -21,7 +22,7 @@ class HomePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Balloon Pop Game',
+                'Spirit Tube',
                 style: TextStyle(
                   fontSize: 36,
                   fontWeight: FontWeight.bold,
@@ -61,7 +62,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => LeaderboardPage()), // Launches the leaderboard page
+                    MaterialPageRoute(builder: (context) => Leaderboard()), // Launches the leaderboard page
                   );
                 },
                 child: Text('Leaderboards'),
@@ -71,17 +72,18 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 20),
-              // Exit Button
-              ElevatedButton(
-                onPressed: () {
-                  _exitApp();
-                },
-                child: Text('Exit'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
-                  textStyle: TextStyle(fontSize: 20),
+              // Exit Button (Only visible on Android)
+              if (Platform.isAndroid)
+                ElevatedButton(
+                  onPressed: () {
+                    _exitApp();
+                  },
+                  child: Text('Exit'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+                    textStyle: TextStyle(fontSize: 20),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -97,10 +99,10 @@ class HomePage extends StatelessWidget {
         return AlertDialog(
           title: Text('How to Play'),
           content: Text(
-            '1. Balloons will spawn at the bottom of the screen.\n'
-                '2. Drag balloons to combine those with the same value.\n'
-                '3. Prevent balloons from touching the top by merging them.\n'
-                '4. Game ends when too many balloons reach the top.',
+            '1. Bubbles will spawn at the bottom of the screen.\n'
+                '2. Drag bubbles to combine those with the same value.\n'
+                '3. Prevent bubbles from touching the top by merging them.\n'
+                '4. Game ends when too many bubbles reach the top.',
           ),
           actions: [
             TextButton(
@@ -117,9 +119,6 @@ class HomePage extends StatelessWidget {
 
   // Exit App
   void _exitApp() {
-    Future.delayed(Duration(milliseconds: 100), () {
-      // Exits the app (works for Android and iOS)
-      Future.delayed(Duration.zero, () => SystemNavigator.pop());
-    });
+    SystemNavigator.pop(); // Exits the app (works on Android only)
   }
 }
