@@ -4,6 +4,7 @@
         android:name="androidx.multidex.MultiDexApplication"
         android:label="MD Tally"
         android:icon="@mipmap/launcher_icon">
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

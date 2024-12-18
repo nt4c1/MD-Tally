@@ -1,9 +1,10 @@
 import 'dart:io'; // Required for Platform check
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import 'game_logic.dart'; // Add this to import GameScreen
 import 'leaderboard_page.dart';
-import 'main.dart';
+import 'game_logic.dart';
+import 'main.dart'; // Add import for GameScreen
 
 class HomePage extends StatelessWidget {
   @override
@@ -35,7 +36,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => MyApp()), // Launches the game
+                    MaterialPageRoute(builder: (context) => GameScreen()), // Launches the game screen
                   );
                 },
                 child: Text('Play'),
