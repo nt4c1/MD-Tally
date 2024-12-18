@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'game_logic.dart'; // Add this to import GameScreen
 import 'leaderboard_page.dart';
-import 'game_logic.dart';
 import 'main.dart'; // Add import for GameScreen
 
 class HomePage extends StatelessWidget {
@@ -99,11 +98,27 @@ class HomePage extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('How to Play'),
-          content: Text(
-            '1. Bubbles will spawn at the bottom of the screen.\n'
-                '2. Drag bubbles to combine those with the same value.\n'
-                '3. Prevent bubbles from touching the top by merging them.\n'
-                '4. Game ends when too many bubbles reach the top.',
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "1. Bubbles spawn randomly from the bottom of the screen and move upwards.\n"
+                      "2. You can tap, drag, or manipulate bubbles to position them for merging.\n"
+                      "3. Merge bubbles with the same value by dragging them.\n"
+                      "4. The more you merge bubbles, the more points you earn and more difficult the games becomes.\n"
+                      "5. Ensure bubbles don’t pile up and touch the top of the screen. If too many bubbles hit the top, your limit will decreases and when it reaches zero, the game ends.\n"
+                      "6. There are 5 special bubbles which disappear after reaching the top: \n"
+                      "   a: Star ⭐ which doubles the score \n"
+                      "   b: Speed ⏱️ which increases the speed \n"
+                      "   c: Freeze ❄️ which stops the upwards flow of bubbles for 3 seconds \n"
+                      "   d: Bomb 💣 which destroys bubbles in a small radius \n"
+                      "   e: Magnet 🧲 which attracts bubbles wihin a certain radius \n"
+                      "7. To use these special bubbles, double-tap on them.",
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

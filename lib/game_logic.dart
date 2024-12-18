@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class Balloon {
   double x; // Horizontal position
@@ -213,19 +214,20 @@ class GameLogic {
   IconData getPowerUpIcon(PowerUpEffect effect) {
     switch (effect) {
       case PowerUpEffect.doubleScore:
-        return Icons.star;//⭐
+        return Icons.star; // ⭐ Represents doubling score
       case PowerUpEffect.increaseSpeed:
-        return Icons.speed; // ⚡
+        return Icons.access_time; // ⏱️ Represents increased speed
       case PowerUpEffect.freeze:
-        return Icons.ac_unit; // ❄️
+        return Icons.ac_unit; // ❄️ Represents freezing
       case PowerUpEffect.bomb:
-        return Icons.bolt; // Bomb-like icon
+        return FontAwesomeIcons.bomb; // 💣 Represents a bomb
       case PowerUpEffect.magnet:
-        return Icons.auto_fix_high; // Alternative icon// 🧲
+        return FontAwesomeIcons.magnet; // 🧲 Represents a magnet
       default:
         return Icons.help; // Fallback icon
     }
   }
+
 
 
   /// Handles the merging of balloons with the same value
