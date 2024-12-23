@@ -18,6 +18,8 @@ dependencies:
   device_preview: ^1.2.0
   firebase_auth: ^4.16.0
   font_awesome_flutter: ^10.8.0
+  geolocator: ^13.0.2
+  audioplayers: ^6.1.0
 
 dev_dependencies:
   flutter_test:
@@ -26,8 +28,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/back.jpg
-    - assets/images/tile.jpg
+    - assets/sounds/  # No 'assets/' in the path here
 
 
   ##flutter_launcher_icons:

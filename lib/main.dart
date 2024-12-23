@@ -32,6 +32,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   final GameLogic _gameLogic = GameLogic();
   late Timer _balloonTimer;
   late Timer _movementTimer;
+  bool _isPaused = false;
   String country = 'Unknown';
   TextEditingController _nameController = TextEditingController();
 
@@ -52,7 +53,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _startGame() {
     // Timer to spawn balloons periodically
     _balloonTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (!_gameLogic.gameOver) {
+      if (!_gameLogic.gameOver && !_isPaused) {
         setState(() {
           _gameLogic.spawnBalloon(
             MediaQuery
@@ -70,6 +71,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     // Timer to update positions and merge balloons
     _movementTimer = Timer.periodic(Duration(milliseconds: 30), (timer) {
+      if (!_isPaused){
       setState(() {
         _gameLogic.updateBalloonPositions(MediaQuery
             .of(context)
@@ -77,6 +79,11 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             .height);
         _gameLogic.mergeBalloons();
       });
+    }});
+  }
+  void _togglePause() {
+    setState(() {
+      _isPaused = !_isPaused;  // Toggle the paused state
     });
   }
   // Add this method to navigate to the HomePage
@@ -173,6 +180,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
 
+          //Pause Button
+          Positioned(
+            top: 40,
+            right: 20,
+            child: IconButton(
+              icon: Icon(
+                _isPaused ? Icons.play_arrow : Icons.pause,
+                color: Colors.white,
+                size: 30,
+              ),
+              onPressed: _togglePause,
+            ),
+          ),
           // Limit Display
           Positioned(
             top: 100,
@@ -204,15 +224,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             ),
           ),
 
-    Positioned(
-    top: 193, // Positioned just below "Limit"
-    left: 0,
-    right: 0,
-    child: Container(
-    height: 5, // Thickness of the line
-    color: Colors.red.withOpacity(0.8),
-    ),
-    ),
+          Positioned(
+            top: 193, // Positioned just below "Limit"
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 5, // Thickness of the line
+              color: Colors.red.withOpacity(0.8),
+            ),
+          ),
           // Balloons
           ..._gameLogic.balloons.map((balloon) {
             return Positioned(

@@ -62,7 +62,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => Leaderboard()), // Launches the leaderboard page
+                      MaterialPageRoute(builder: (context) => Leaderboard())
                   );
                 },
                 child: Text('Leaderboards'),

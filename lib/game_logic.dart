@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:audioplayers/audioplayers.dart';
+
 
 class Balloon {
   double x; // Horizontal position
@@ -57,6 +59,18 @@ class GameLogic {
   int limit = 11; // Initial limit value
   int previousTouchCount = 0; // Track previous number of balloons touching the top
 
+
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  Future<void> playSound(String soundFile) async {
+    try {
+      await _audioPlayer.play(AssetSource('sounds/$soundFile'));
+    } catch (e) {
+      print('Error playing sound: $e');
+    }
+  }
+
+
   /// Spawns a balloon at the bottom of the screen
   void spawnBalloon(double screenWidth, double screenHeight) {
     final random = Random();
@@ -105,6 +119,27 @@ class GameLogic {
     }
   }
 }
+
+  void checkAssets() {
+    final List<String> assetPaths = [
+      'assets/sounds/bomb.mp3',
+      'assets/sounds/double_score.mp3',
+      'assets/sounds/freeze.mp3',
+      'assets/sounds/magnet.mp3',
+      'assets/sounds/speed_up.mp3'
+      // Add other asset paths here for testing
+    ];
+
+    for (var path in assetPaths) {
+      print('Checking asset: $path');
+      try {
+        // You can try loading the assets here or use them
+      } catch (e) {
+        print('Asset not found: $path');
+      }
+    }
+  }
+
   /// Updates the position of balloons, making them move upwards
   void updateBalloonPositions(double screenHeight) {
     int touchedTopCount = 0;
@@ -147,6 +182,8 @@ class GameLogic {
     switch (powerUpBalloon.effect) {
       case PowerUpEffect.doubleScore:
         score *= 2;
+        checkAssets();
+        playSound('double_score.mp3');
 
         break;
       case PowerUpEffect.increaseSpeed:
@@ -154,12 +191,16 @@ class GameLogic {
         for (var balloon in balloons) {
           balloon.speed *= 1.2; // Increase speed by 20%
         }
+        checkAssets();
+        playSound('speed_up.mp3');
         break;
       case PowerUpEffect.freeze:
       // Immediately freeze all balloon movement
         for (var balloon in balloons) {
           balloon.speed = 0; // Set speed to 0 to stop movement
         }
+        checkAssets();
+        playSound('freeze.mp3');
         // Unfreeze balloons after a delay (3 seconds)
         Future.delayed(Duration(seconds: 3), () {
           for (var balloon in balloons) {
@@ -193,6 +234,8 @@ class GameLogic {
             print('Balloon at index $i removed'); // Debugging line
           }
         }
+        checkAssets();
+        playSound('bomb.mp3');
         break;
 
       case PowerUpEffect.magnet:
@@ -204,6 +247,8 @@ class GameLogic {
             balloon.y = powerUpBalloon.y;
           }
         }
+        checkAssets();
+        playSound('magnet.mp3');
         break;
     }
     balloons.remove(powerUpBalloon);
