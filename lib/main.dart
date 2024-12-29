@@ -138,7 +138,34 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(
         children: [
+          Positioned.fill(
+            child: AnimatedBackground(),
+          ),
           // Background Gradient
+          Positioned(
+              top: 50,
+              left: MediaQuery.of(context).size.width / 2 - 100,
+              child: AnimatedText(
+                  text: 'Spirit Tube',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+    ),
+          ),
+          Positioned(
+            top: 40,
+            right: 20,
+            child: IconButton(
+              icon: Icon(
+                _isPaused ? Icons.play_arrow : Icons.pause,
+                color: Colors.white,
+                size: 30,
+              ),
+              onPressed: _togglePause,
+            ),
+          ),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -168,13 +195,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 5,
-                      color: Colors.grey.shade600,
-                      offset: Offset(2, 2),
-                    ),
-                  ],
                 ),
               ),
             ),
@@ -212,13 +232,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 5,
-                      color: Colors.black.withOpacity(0.5),
-                      offset: Offset(2, 2),
-                    ),
-                  ],
                 ),
               ),
             ),
@@ -275,13 +288,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: balloon.color.withOpacity(0.5),
-                        blurRadius: 8,
-                        offset: Offset(3, 6),
-                      ),
-                    ],
                   ),
                   child: Center(
                     child: balloon is PowerUpBalloon
@@ -313,13 +319,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: Offset(2, 4),
-                    ),
-                  ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -344,47 +343,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     SizedBox(height: 15),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            _saveToFirebase();
-                            setState(() {
-                              _gameLogic.resetGame();
-                              _nameController.clear();
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: EdgeInsets.symmetric(horizontal: 20,
-                                vertical: 12),
-                          ),
-                          child: Text('Submit'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _gameLogic.resetGame();
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            padding: EdgeInsets.symmetric(horizontal: 20,
-                                vertical: 12),
-                          ),
-                          child: Text('Restart'),
-                        ),
-                        ElevatedButton(
-                          onPressed: _goToHomepage, // Navigate to Homepage
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            padding: EdgeInsets.symmetric(horizontal: 20,
-                                vertical: 12),), child: Text('Go to Homepage'), // New button to go home
-                        ),
-
-                      ],
-                    ),
+                    CustomButton(label: 'Submit', onPressed: _saveToFirebase),
+                    CustomButton(label: 'Restart', onPressed: _gameLogic.resetGame),
+                    CustomButton(label: 'Go to Homepage', onPressed: _goToHomepage),
                   ],
                 ),
               ),
