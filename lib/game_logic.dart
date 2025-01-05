@@ -159,7 +159,6 @@ class GameLogic {
 
         // If it's a power-up balloon, trigger the effect and mark for removal
         if (balloon is PowerUpBalloon) {
-          triggerPowerUpEffect(balloon);
           balloons.removeAt(i);
         }
       }
@@ -276,21 +275,28 @@ class GameLogic {
 
 
   /// Handles the merging of balloons with the same value
-    void mergeBalloons() {
-      for (int i = 0; i < balloons.length; i++) {
-        for (int j = i + 1; j < balloons.length; j++) {
-          if ((balloons[i].x - balloons[j].x).abs() < balloonSize &&
-              (balloons[i].y - balloons[j].y).abs() < balloonSize &&
-              balloons[i].value == balloons[j].value) {
-            balloons[i].value += balloons[j].value;
-            balloons.removeAt(j);
-            score += balloons[i].value;
-            break;
-          }
+  void mergeBalloons() {
+    for (int i = 0; i < balloons.length; i++) {
+      for (int j = i + 1; j < balloons.length; j++) {
+        // Skip merging if either balloon is a PowerUpBalloon
+        if (balloons[i] is PowerUpBalloon || balloons[j] is PowerUpBalloon) {
+          continue;
+        }
+
+        // Check if balloons are close enough and have the same value
+        if ((balloons[i].x - balloons[j].x).abs() < balloonSize &&
+            (balloons[i].y - balloons[j].y).abs() < balloonSize &&
+            balloons[i].value == balloons[j].value) {
+          balloons[i].value += balloons[j].value; // Merge values
+          balloons.removeAt(j); // Remove the second balloon
+          score += balloons[i].value; // Update score
+          break; // Break to avoid skipping balloons due to shifting indices
         }
       }
     }
-    /// Resets the game state
+  }
+
+  /// Resets the game state
     void resetGame() {
       balloons.clear();
       score = 0;

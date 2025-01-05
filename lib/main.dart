@@ -22,6 +22,54 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+// Reusable InfoDisplay Widget
+class InfoDisplay extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color backgroundColor;
+  final Color textColor;
+
+  const InfoDisplay({
+    Key? key,
+    required this.label,
+    required this.value,
+    this.backgroundColor = Colors.white,
+    this.textColor = Colors.black,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: backgroundColor.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class GameScreen extends StatefulWidget {
   @override
@@ -71,21 +119,24 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
     // Timer to update positions and merge balloons
     _movementTimer = Timer.periodic(Duration(milliseconds: 30), (timer) {
-      if (!_isPaused){
-      setState(() {
-        _gameLogic.updateBalloonPositions(MediaQuery
-            .of(context)
-            .size
-            .height);
-        _gameLogic.mergeBalloons();
-      });
-    }});
-  }
-  void _togglePause() {
-    setState(() {
-      _isPaused = !_isPaused;  // Toggle the paused state
+      if (!_isPaused) {
+        setState(() {
+          _gameLogic.updateBalloonPositions(MediaQuery
+              .of(context)
+              .size
+              .height);
+          _gameLogic.mergeBalloons();
+        });
+      }
     });
   }
+
+  void _togglePause() {
+    setState(() {
+      _isPaused = !_isPaused; // Toggle the paused state
+    });
+  }
+
   // Add this method to navigate to the HomePage
   void _goToHomepage() {
     Navigator.pushReplacement(
@@ -93,7 +144,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       MaterialPageRoute(builder: (context) => HomePage()),
     );
   }
-
 
 
   void _saveToFirebase() async {
@@ -120,6 +170,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
+
   @override
   void dispose() {
     _balloonTimer.cancel();
@@ -138,22 +189,29 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return Scaffold(
       body: Stack(
         children: [
+          // Animated Background
           Positioned.fill(
             child: AnimatedBackground(),
           ),
-          // Background Gradient
-          Positioned(
-              top: 50,
-              left: MediaQuery.of(context).size.width / 2 - 100,
-              child: AnimatedText(
-                  text: 'Spirit Tube',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-    ),
+
+          // Game Title
+          /*Positioned(
+            top: 50,
+            left: MediaQuery
+                .of(context)
+                .size
+                .width / 2 - 100,
+            child: AnimatedText(
+              text: 'Spirit Tube',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
+*/
+          // Pause Button
           Positioned(
             top: 40,
             right: 20,
@@ -164,15 +222,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 size: 30,
               ),
               onPressed: _togglePause,
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.lightBlue.shade300, Colors.indigo.shade900],
-              ),
             ),
           ),
 
@@ -182,70 +231,41 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             left: MediaQuery
                 .of(context)
                 .size
-                .width / 2 - 80,
-            child: Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Score: ${_gameLogic.score}',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
+                .width / 2 - 50,
+            child: InfoDisplay(
+              label: 'Score : ',
+              value: '${_gameLogic.score}',
+              backgroundColor: Colors.white,
+              textColor: Colors.black,
             ),
           ),
 
-          //Pause Button
-          Positioned(
-            top: 40,
-            right: 20,
-            child: IconButton(
-              icon: Icon(
-                _isPaused ? Icons.play_arrow : Icons.pause,
-                color: Colors.white,
-                size: 30,
-              ),
-              onPressed: _togglePause,
-            ),
-          ),
           // Limit Display
           Positioned(
-            top: 100,
+            top: 125,
             left: MediaQuery
                 .of(context)
                 .size
-                .width / 2 - 80,
-            child: Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                "Limit: ${_gameLogic.limit}",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+                .width / 2 - 50,
+            child: InfoDisplay(
+                label: 'Limit : ',
+                value: '${_gameLogic.limit}',
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
             ),
           ),
 
+          // Limit Threshold Line
           Positioned(
-            top: 193, // Positioned just below "Limit"
+            top: 193,
             left: 0,
             right: 0,
             child: Container(
-              height: 5, // Thickness of the line
+              height: 5,
               color: Colors.red.withOpacity(0.8),
             ),
           ),
+
           // Balloons
           ..._gameLogic.balloons.map((balloon) {
             return Positioned(
@@ -255,21 +275,21 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 onPanUpdate: (details) {
                   setState(() {
                     balloon.x = (balloon.x + details.delta.dx)
-                        .clamp(0.0, MediaQuery.of(context).size.width - _gameLogic.balloonSize);
-                    balloon.y = (balloon.y + details.delta.dy).clamp(_gameLogic.reservedScoreHeight + _gameLogic.balloonSize,
-                        MediaQuery.of(context).size.height - _gameLogic.balloonSize);
+                        .clamp(0.0, MediaQuery
+                        .of(context)
+                        .size
+                        .width - _gameLogic.balloonSize);
+                    balloon.y = (balloon.y + details.delta.dy)
+                        .clamp(193 + _gameLogic.balloonSize,
+                        screenHeight - _gameLogic.balloonSize);
                   });
                 },
-                onPanEnd: (details) {
-                  setState(() {
-                    _gameLogic.mergeBalloons();
-                  });
-                },
+                onPanEnd: (_) => _gameLogic.mergeBalloons(),
                 onDoubleTap: () {
                   if (balloon is PowerUpBalloon) {
                     PowerUpBalloon powerUpBalloon = balloon as PowerUpBalloon;
                     setState(() {
-                      _gameLogic.triggerPowerUpEffect(powerUpBalloon); // Call the effect
+                      _gameLogic.triggerPowerUpEffect(powerUpBalloon);
                     });
                   }
                 },
@@ -279,10 +299,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: balloon is PowerUpBalloon
-                        ? LinearGradient(colors: [
-                      Colors.yellowAccent,
-                      Colors.orangeAccent
-                    ])
+                        ? LinearGradient(
+                      colors: [Colors.yellowAccent, Colors.orangeAccent],
+                    )
                         : LinearGradient(
                       colors: [balloon.color.withOpacity(0.7), balloon.color],
                       begin: Alignment.topLeft,
@@ -325,13 +344,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   children: [
                     Text(
                       'Game Over',
-                      style: TextStyle(fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red),
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
                     ),
                     SizedBox(height: 10),
-                    Text('Your score: ${_gameLogic.score}',
-                        style: TextStyle(fontSize: 20)),
+                    Text(
+                      'Your score: ${_gameLogic.score}',
+                      style: TextStyle(fontSize: 20),
+                    ),
                     SizedBox(height: 10),
                     TextField(
                       controller: _nameController,
@@ -342,10 +365,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         fillColor: Colors.grey.shade200,
                       ),
                     ),
-                    SizedBox(height: 15),
+                    SizedBox(height: 25),
                     CustomButton(label: 'Submit', onPressed: _saveToFirebase),
-                    CustomButton(label: 'Restart', onPressed: _gameLogic.resetGame),
-                    CustomButton(label: 'Go to Homepage', onPressed: _goToHomepage),
+                    SizedBox(height: 10),
+                    CustomButton(
+                        label: 'Restart', onPressed: _gameLogic.resetGame),
+                    SizedBox(height: 10),
+                    CustomButton(
+                        label: 'Go to Homepage', onPressed: _goToHomepage),
+
                   ],
                 ),
               ),
