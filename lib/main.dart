@@ -22,6 +22,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 // Reusable InfoDisplay Widget
 class InfoDisplay extends StatelessWidget {
   final String label;
@@ -104,14 +105,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (!_gameLogic.gameOver && !_isPaused) {
         setState(() {
           _gameLogic.spawnBalloon(
-            MediaQuery
-                .of(context)
-                .size
-                .width,
-            MediaQuery
-                .of(context)
-                .size
-                .height,
+            MediaQuery.of(context).size.width,
+            MediaQuery.of(context).size.height,
           );
         });
       }
@@ -121,10 +116,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _movementTimer = Timer.periodic(Duration(milliseconds: 30), (timer) {
       if (!_isPaused) {
         setState(() {
-          _gameLogic.updateBalloonPositions(MediaQuery
-              .of(context)
-              .size
-              .height);
+          _gameLogic.updateBalloonPositions(MediaQuery.of(context).size.height);
           _gameLogic.mergeBalloons();
         });
       }
@@ -145,7 +137,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     );
   }
 
-
   void _saveToFirebase() async {
     String playerName = _nameController.text.trim();
     int score = _gameLogic.score;
@@ -161,6 +152,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Data saved successfully!'),
         ));
+        _restartGame(); // Restart the game after submitting data
       } catch (e) {
         print('Error saving to Firestore: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -170,6 +162,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
   }
 
+  void _restartGame() {
+    _gameLogic.resetGame();
+    setState(() {
+      _isPaused = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -181,10 +179,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery
-        .of(context)
-        .size
-        .height;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       body: Stack(
@@ -194,23 +189,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             child: AnimatedBackground(),
           ),
 
-          // Game Title
-          /*Positioned(
-            top: 50,
-            left: MediaQuery
-                .of(context)
-                .size
-                .width / 2 - 100,
-            child: AnimatedText(
-              text: 'Spirit Tube',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-*/
           // Pause Button
           Positioned(
             top: 40,
@@ -228,10 +206,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           // Score Display
           Positioned(
             top: 40,
-            left: MediaQuery
-                .of(context)
-                .size
-                .width / 2 - 50,
+            left: MediaQuery.of(context).size.width / 2 - 50,
             child: InfoDisplay(
               label: 'Score : ',
               value: '${_gameLogic.score}',
@@ -243,13 +218,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           // Limit Display
           Positioned(
             top: 125,
-            left: MediaQuery
-                .of(context)
-                .size
-                .width / 2 - 50,
+            left: MediaQuery.of(context).size.width / 2 - 50,
             child: InfoDisplay(
-                label: 'Limit : ',
-                value: '${_gameLogic.limit}',
+              label: 'Limit : ',
+              value: '${_gameLogic.limit}',
               backgroundColor: Colors.red,
               textColor: Colors.white,
             ),
@@ -274,14 +246,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               child: GestureDetector(
                 onPanUpdate: (details) {
                   setState(() {
-                    balloon.x = (balloon.x + details.delta.dx)
-                        .clamp(0.0, MediaQuery
-                        .of(context)
-                        .size
-                        .width - _gameLogic.balloonSize);
-                    balloon.y = (balloon.y + details.delta.dy)
-                        .clamp(193 + _gameLogic.balloonSize,
-                        screenHeight - _gameLogic.balloonSize);
+                    if (!_isPaused) {
+                      balloon.x = (balloon.x + details.delta.dx)
+                          .clamp(0.0, MediaQuery.of(context).size.width - _gameLogic.balloonSize);
+                      balloon.y = (balloon.y + details.delta.dy)
+                          .clamp(193 + _gameLogic.balloonSize, screenHeight - _gameLogic.balloonSize);
+                    }
                   });
                 },
                 onPanEnd: (_) => _gameLogic.mergeBalloons(),
@@ -369,11 +339,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     CustomButton(label: 'Submit', onPressed: _saveToFirebase),
                     SizedBox(height: 10),
                     CustomButton(
-                        label: 'Restart', onPressed: _gameLogic.resetGame),
+                        label: 'Restart', onPressed: _restartGame),
                     SizedBox(height: 10),
                     CustomButton(
                         label: 'Go to Homepage', onPressed: _goToHomepage),
-
                   ],
                 ),
               ),

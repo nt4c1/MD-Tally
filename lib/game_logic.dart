@@ -53,6 +53,7 @@ class GameLogic {
   bool gameOver = false;
   int score = 0;
   bool isFrozen = false;
+  bool isPaused = false;
 
   final double balloonSize = 80.0; // Diameter of the balloons
   final double reservedScoreHeight = 120.0; // Height reserved for the score display
@@ -75,50 +76,34 @@ class GameLogic {
   void spawnBalloon(double screenWidth, double screenHeight) {
     final random = Random();
 
-    if (gameOver || isFrozen){
-      return;
-    }
-    if (!gameOver || !isFrozen) {
-      final balloonX = random.nextDouble() *
-          (screenWidth - balloonSize); // Random horizontal position
-      final balloonY = screenHeight - balloonSize; // Spawn near the bottom
+    if (gameOver || isFrozen || isPaused) return;  // Early return if game is over, frozen, or paused
 
-      //Randomly decide if the balloon should be a regular or power-up balloon
-      bool isPowerUp = random.nextDouble() <
-          0.2; // 20% chance for power-up balloon
+    final balloonX = random.nextDouble() * (screenWidth - balloonSize);
+    final balloonY = screenHeight - balloonSize;
+
+    bool isPowerUp = random.nextDouble() < 0.2;  // 20% chance for power-up balloon
 
     if (isPowerUp) {
-    // Power-Up Balloon
-    PowerUpEffect effect = PowerUpEffect.values[random.nextInt(PowerUpEffect.values.length)];
-    balloons.add(PowerUpBalloon(
-      x: balloonX,
-      y: balloonY,
-      speed: random.nextDouble() * 1.5 + 1, // Speed between 1 and 2.5
-      color: Color.fromARGB(
-        255,
-        random.nextInt(256),
-        random.nextInt(256),
-        random.nextInt(256),
-      ),
-      value: 0,
-      effect: effect,
-    ));
+      PowerUpEffect effect = PowerUpEffect.values[random.nextInt(PowerUpEffect.values.length)];
+      balloons.add(PowerUpBalloon(
+        x: balloonX,
+        y: balloonY,
+        speed: random.nextDouble() * 1.5 + 1,  // Speed between 1 and 2.5
+        color: Color.fromARGB(255, random.nextInt(256), random.nextInt(256), random.nextInt(256)),
+        value: 0,
+        effect: effect,
+      ));
     } else {
       balloons.add(Balloon(
         x: balloonX,
         y: balloonY,
-        speed: random.nextDouble() * 1.5 + 1, // Speed between 1 and 2.5
-        color: Color.fromARGB(
-          255,
-          random.nextInt(256),
-          random.nextInt(256),
-          random.nextInt(256),
-        ),
+        speed: random.nextDouble() * 1.5 + 1,  // Speed between 1 and 2.5
+        color: Color.fromARGB(255, random.nextInt(256), random.nextInt(256), random.nextInt(256)),
         value: random.nextInt(10) + 1,
       ));
     }
   }
-}
+
 
   void checkAssets() {
     final List<String> assetPaths = [
@@ -144,7 +129,7 @@ class GameLogic {
   void updateBalloonPositions(double screenHeight) {
     int touchedTopCount = 0;
 
-    if (isFrozen) {
+    if (isFrozen || isPaused) {
       return;  // Do nothing if frozen
     }
 
@@ -178,6 +163,7 @@ class GameLogic {
     }
   }
   void triggerPowerUpEffect(PowerUpBalloon powerUpBalloon) {
+    if (isPaused)return;
     switch (powerUpBalloon.effect) {
       case PowerUpEffect.doubleScore:
         score *= 2;
@@ -276,6 +262,10 @@ class GameLogic {
 
   /// Handles the merging of balloons with the same value
   void mergeBalloons() {
+    if (isPaused)
+      {
+        return;
+      }
     for (int i = 0; i < balloons.length; i++) {
       for (int j = i + 1; j < balloons.length; j++) {
         // Skip merging if either balloon is a PowerUpBalloon
@@ -304,6 +294,7 @@ class GameLogic {
       limit = 11; // Reset limit to 11 when restarting
       previousTouchCount = 0;
       isFrozen = false;
+      isPaused = false;
       // Reset the count of balloons touching the top
     }
 
