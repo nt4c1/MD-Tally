@@ -29,6 +29,12 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>We need access to your location to provide a better experience within the app.</string>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We need access to your location to provide a better experience within the app.</string>
+
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
