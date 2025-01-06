@@ -263,9 +263,9 @@ class GameLogic {
   /// Handles the merging of balloons with the same value
   void mergeBalloons() {
     if (isPaused)
-      {
-        return;
-      }
+    {
+      return;
+    }
     for (int i = 0; i < balloons.length; i++) {
       for (int j = i + 1; j < balloons.length; j++) {
         // Skip merging if either balloon is a PowerUpBalloon
@@ -287,15 +287,15 @@ class GameLogic {
   }
 
   /// Resets the game state
-    void resetGame() {
-      balloons.clear();
-      score = 0;
-      gameOver = false;
-      limit = 11; // Reset limit to 11 when restarting
-      previousTouchCount = 0;
-      isFrozen = false;
-      isPaused = false;
-      // Reset the count of balloons touching the top
-    }
+  void resetGame() {
+    balloons.clear();
+    score = 0;
+    gameOver = false;
+    limit = 11; // Reset limit to 11 when restarting
+    previousTouchCount = 0;
+    isFrozen = false;
+    isPaused = false;
+    // Reset the count of balloons touching the top
+  }
 
 }

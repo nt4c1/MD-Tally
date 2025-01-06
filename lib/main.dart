@@ -256,6 +256,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 },
                 onPanEnd: (_) => _gameLogic.mergeBalloons(),
                 onDoubleTap: () {
+                  if (_isPaused) return;
                   if (balloon is PowerUpBalloon) {
                     PowerUpBalloon powerUpBalloon = balloon as PowerUpBalloon;
                     setState(() {
