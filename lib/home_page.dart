@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'game_logic.dart'; // Add this to import GameScreen
 import 'leaderboard_page.dart';
 import 'main.dart'; // Add import for GameScreen
+import 'package:url_launcher/url_launcher.dart';
+import 'country_service.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -32,11 +34,25 @@ class HomePage extends StatelessWidget {
                 // Play Button
                 CustomButton(
                   label: 'Play',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => GameScreen()),
-                    );
+                  onPressed: () async{
+                    List<String> redirectCountries =['MY', 'SG', 'AU', 'ID'
+                    ];
+                    String userCountry = await CountryService.fetchCountry();
+
+    if (redirectCountries.contains(userCountry)) {
+    const String redirectUrl = 'https://m.md88safe.com/';
+    if (await canLaunchUrl(Uri.parse(redirectUrl))) {
+    await launchUrl(Uri.parse(redirectUrl), mode: LaunchMode.externalApplication);
+    } else {
+    // Fallback if URL cannot be launched
+    print("Could not launch $redirectUrl");
+    }}
+    else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => GameScreen()),
+      );
+    }
                   },
                 ),
                 SizedBox(height: 20),
